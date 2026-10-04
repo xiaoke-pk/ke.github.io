@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>卡密验证中心</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    background: #080b12; color: #f4f7ff;
+}
+body { min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 18px; }
+.container { width: 100%; max-width: 480px; }
+.card {
+    background: rgba(18, 23, 34, 0.96);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 24px; padding: 22px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.03);
+}
+.header { text-align: center; margin-bottom: 24px; }
+.logo {
+    width: 68px; height: 68px; margin: 0 auto 14px; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; font-weight: 800;
+    background: linear-gradient(135deg, #5865f2, #7c3aed);
+    box-shadow: 0 10px 30px rgba(88,101,242,.25);
+}
+.title { margin: 0; font-size: 24px; font-weight: 800; }
+.subtitle { margin-top: 7px; color: #8e99ad; font-size: 13px; }
+.section { margin-top: 18px; }
+.label { display: block; margin-bottom: 8px; color: #aeb8ca; font-size: 13px; font-weight: 600; }
+.input-wrap { position: relative; }
+input {
+    width: 100%; height: 52px; border: 1px solid #2a3344; border-radius: 14px;
+    outline: none; padding: 0 15px; color: #fff; background: #0d121c;
+    font-size: 16px; transition: .2s;
+}
+input:focus { border-color: #6573ff; box-shadow: 0 0 0 3px rgba(101,115,255,.12); }
+#cardKey { letter-spacing: 1px; font-weight: 600; }
+.device-box {
+    width: 100%; min-height: 52px; padding: 11px 13px; border-radius: 14px;
+    background: #0d121c; border: 1px solid #2a3344;
+    display: flex; align-items: center; gap: 10px;
+}
+.device-id {
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: #aeb8ca; font-size: 12px; font-family: monospace;
+}
+.small-btn {
+    flex-shrink: 0; border: 0; border-radius: 9px; padding: 8px 10px;
+    color: #fff; background: #202a3a; font-size: 12px; cursor: pointer;
+}
+.small-btn:active { transform: scale(.96); }
+.options { display: flex; align-items: center; justify-content: space-between; margin-top: 13px; gap: 10px; }
+.checkbox { display: flex; align-items: center; gap: 8px; color: #9da8bb; font-size: 13px; }
+.checkbox input { width: 17px; height: 17px; margin: 0; accent-color: #6673ff; }
+.verify-btn {
+    width: 100%; height: 54px; margin-top: 18px; border: 0; border-radius: 15px;
+    color: white; background: linear-gradient(135deg, #5865f2, #7c3aed);
+    font-size: 16px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 10px 25px rgba(88,101,242,.22); transition: .2s;
+}
+.verify-btn:active { transform: scale(.98); }
+.verify-btn:disabled { opacity: .6; cursor: not-allowed; }
+.status {
+    margin-top: 18px; padding: 15px; border-radius: 15px;
+    border: 1px solid #293243; background: #0d121c; display: none;
+}
+.status.show { display: block; }
+.status.success { border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.07); }
+.status.error   { border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.07); }
+.status.warning { border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.07); }
+.status-title { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+.status-message { color: #aeb8ca; font-size: 13px; line-height: 1.6; }
+.result { margin-top: 14px; display: none; }
+.result.show { display: block; }
+.result-item {
+    display: flex; justify-content: space-between; gap: 15px;
+    padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.result-item:last-child { border-bottom: 0; }
+.result-name { color: #8f9aae; font-size: 13px; }
+.result-value {
+    max-width: 62%; text-align: right; word-break: break-word;
+    color: #f2f5fb; font-size: 13px; font-weight: 600;
+}
+.server {
+    margin-top: 20px; padding: 11px 13px; border-radius: 12px;
+    background: #0b1018; color: #717d91; font-size: 11px;
+    line-height: 1.5; word-break: break-all;
+}
+.footer { margin-top: 18px; text-align: center; color: #596477; font-size: 11px; line-height: 1.6; }
+.loading {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.3); border-top-color: white;
+    border-radius: 50%; animation: spin .7s linear infinite;
+    vertical-align: -3px; margin-right: 7px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.hidden { display: none !important; }
+
+/* ============ 反馈弹窗 ============ */
+#fbBtn {
+  position: fixed; top: 18px; right: 18px; z-index: 99997;
+  height: 40px; padding: 0 16px; border-radius: 20px;
+  background: rgba(14,116,144,.95);
+  border: 1px solid rgba(255,255,255,.15);
+  color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,.3);
+}
+#fbBtn .dot-new {
+  position: absolute; top: -2px; right: -2px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #ef4444; display: none;
+}
+#fbBtn .dot-new.show { display: block; }
+
+#fbModal {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,.78); z-index: 99999;
+  justify-content: center; align-items: center; padding: 14px;
+}
+#fbModalInner {
+  background: #161b22; border: 1px solid #30363d; border-radius: 14px;
+  padding: 16px; width: 100%; max-width: 460px; max-height: 90vh;
+  display: flex; flex-direction: column;
+}
+#fbModalInner h3 { margin: 0 0 12px 0; color: #58a6ff; font-size: 15px; }
+#fbNewSection { margin-bottom: 12px; }
+#fbNewSection label { display: block; font-size: 12px; color: #8b949e; margin-bottom: 5px; }
+#fbContent, #fbContact, #fbReplyInput {
+  width: 100%; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+  padding: 9px 10px; color: #e6edf3; font-size: 13px; outline: none;
+}
+textarea { resize: vertical; }
+#fbBtnRow { display: flex; gap: 8px; margin-top: 10px; }
+#fbBtnRow button { flex: 1; height: 40px; border: 0; border-radius: 8px; cursor: pointer; font-size: 13px; }
+#fbCancel { background: #21262d; color: #fff; }
+#fbSubmit { background: #0e7490; color: #fff; }
+#fbMsg { margin-top: 8px; font-size: 12px; text-align: center; min-height: 16px; }
+
+#fbThreadList {
+  border-top: 1px solid #30363d;
+  padding-top: 12px;
+  overflow: auto;
+  max-height: 50vh;
+}
+.fb-thread-item {
+  padding: 10px; background: #0d1117; border: 1px solid #30363d;
+  border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+  transition: .15s;
+}
+.fb-thread-item:hover { border-color: #58a6ff; }
+.fb-thread-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; color: #8b949e;
+}
+.fb-thread-preview {
+  margin-top: 5px; font-size: 12px; color: #cbd5e1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fb-thread-badge {
+  background: #ef4444; color: #fff; font-size: 10px;
+  padding: 1px 6px; border-radius: 8px; margin-left: 4px;
+}
+.fb-thread-closed { color: #6e7681; font-size: 10px; }
+
+/* 对话视图（弹窗里） */
+#fbChatView { display: none; flex-direction: column; flex: 1; min-height: 0; }
+#fbChatHead {
+  font-size: 12px; color: #8b949e; margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+#fbChatHead button {
+  background: #21262d; color: #fff; border: 0; border-radius: 6px;
+  padding: 5px 10px; font-size: 11px; cursor: pointer;
+}
+#fbChatMsgs {
+  flex: 1; overflow: auto; background: #0d1117; border: 1px solid #30363d;
+  border-radius: 8px; padding: 10px; margin-bottom: 10px; min-height: 200px;
+}
+.msg-row { margin-bottom: 10px; display: flex; flex-direction: column; }
+.msg-row.user { align-items: flex-start; }
+.msg-row.admin { align-items: flex-end; }
+.msg-bubble {
+  max-width: 85%; padding: 8px 12px; border-radius: 10px;
+  font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+}
+.msg-row.user .msg-bubble { background: #1e293b; color: #e6edf3; border-top-left-radius: 2px; }
+.msg-row.admin .msg-bubble { background: #0e7490; color: #fff; border-top-right-radius: 2px; }
+.msg-time { font-size: 10px; color: #6e7681; margin-top: 3px; }
+</style>
+</head>
+<body>
+
+<!-- 反馈按钮 -->
+<button id="fbBtn" type="button" title="反馈">
+  💬 反馈
+  <span class="dot-new" id="fbNewDot"></span>
+</button>
+
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <div class="logo">✓</div>
+      <h1 class="title">卡密验证中心</h1>
+      <div class="subtitle">输入卡密进行服务器验证</div>
+    </div>
+
+    <div class="section">
+      <label class="label" for="cardKey">卡密</label>
+      <div class="input-wrap">
+        <input id="cardKey" type="text" inputmode="text"
+               autocomplete="off" autocapitalize="characters"
+               spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX">
+      </div>
+    </div>
+
+    <div class="section">
+      <label class="label">当前设备</label>
+      <div class="device-box">
+        <div id="deviceId" class="device-id">正在生成设备 ID...</div>
+        <button id="resetDeviceBtn" class="small-btn" type="button">重置</button>
+      </div>
+    </div>
+
+    <div class="options">
+      <label class="checkbox">
+        <input id="rememberKey" type="checkbox">
+        <span>记住卡密</span>
+      </label>
+      <label class="checkbox">
+        <input id="autoVerify" type="checkbox">
+        <span>启动自动验证</span>
+      </label>
+    </div>
+
+    <button id="verifyBtn" class="verify-btn" type="button">验证卡密</button>
+
+    <button id="unbindBtn" class="small-btn"
+            style="width:100%;height:48px;margin-top:10px;background:#3a2024;border:1px solid rgba(239,68,68,.28);font-size:14px;"
+            type="button">解绑当前设备</button>
+
+    <div id="status" class="status">
+      <div id="statusTitle" class="status-title"></div>
+      <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <div id="result" class="result">
+      <div class="result-item"><span class="result-name">验证状态</span><span id="resultStatus" class="result-value">-</span></div>
+      <div class="result-item"><span class="result-name">到期时间</span><span id="resultExpire" class="result-value">-</span></div>
+      <div class="result-item"><span class="result-name">最大设备数</span><span id="resultMaxDevices" class="result-value">-</span></div>
+      <div class="result-item"><span class="result-name">已绑定设备</span><span id="resultBoundDevices" class="result-value">-</span></div>
+    </div>
+
+    <div class="server">验证网关：有备用端服务器 + 主后端进行验证<span id="serverUrl"></span></div>
+
+    <div class="footer">本页面仅负责客户端验证请求<br>卡密数据由远程服务器处理</div>
+  </div>
+</div>
+
+<!-- ============ 反馈弹窗 ============ -->
+<div id="fbModal">
+  <div id="fbModalInner">
+    <!-- 主视图：新建反馈 + 会话列表 -->
+    <div id="fbMainView">
+      <h3>意见反馈 / Bug 上报</h3>
+      <div id="fbNewSection">
+        <label for="fbContent">反馈内容（必填，最多 1000 字）</label>
+        <textarea id="fbContent" rows="3" maxlength="1000" placeholder="请描述你遇到的问题或建议..."></textarea>
+        <label for="fbContact" style="margin-top:8px;">联系方式（可选）</label>
+        <input id="fbContact" type="text" maxlength="100" placeholder="邮箱 / QQ / 微信">
+        <div id="fbBtnRow">
+          <button id="fbCancel" type="button">取消</button>
+          <button id="fbSubmit" type="button">提交</button>
+        </div>
+        <div id="fbMsg"></div>
+      </div>
+      <div id="fbThreadList">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:8px;">我的反馈和回复</div>
+        <div id="fbThreadListBody"><div class="empty">加载中...</div></div>
+      </div>
+    </div>
+
+    <!-- 对话视图 -->
+    <div id="fbChatView">
+      <div id="fbChatHead">
+        <span id="fbChatHeadText">-</span>
+        <button id="fbBackBtn" type="button">← 返回</button>
+      </div>
+      <div id="fbChatMsgs"></div>
+      <textarea id="fbReplyInput" rows="2" maxlength="1000" placeholder="继续追问..."></textarea>
+      <div id="fbBtnRow">
+        <button id="fbReplySubmit" type="button" style="background:#0e7490;color:#fff;">发送</button>
+      </div>
+      <div id="fbMsg2" style="margin-top:8px;font-size:12px;text-align:center;min-height:16px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 卡密验证
+// ============================================================
+(function () {
+  "use strict";
+  const API_BASE = "https://kx.xiaokekx.workers.dev";
+  const VERIFY_API = API_BASE + "/api/verify";
+  const UNBIND_API = API_BASE + "/api/unbind";
+  const SUCCESS_PAGE = "cg.html";
+  const CLIENT_SECRET = "a7f3b9c2e8d1460f5b2a8d3c9e7f1a4b6c8d2e5f9a3b7c1d4e8f2a6b9c3d7e1f";
+
+  async function sha256(text) {
+    const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buffer)).map(x => x.toString(16).padStart(2, "0")).join("");
+  }
+
+  const STORAGE = {
+    DEVICE_ID: "card_verify_device_id",
+    CARD_KEY: "card_verify_saved_key",
+    CARD_KEY_DRAFT: "card_verify_card_key_draft",
+    REMEMBER: "card_verify_remember_key",
+    AUTO_VERIFY: "card_verify_auto_verify"
+  };
+
+  const $ = id => document.getElementById(id);
+  const cardKeyInput = $("cardKey");
+  const deviceIdElement = $("deviceId");
+  const resetDeviceBtn = $("resetDeviceBtn");
+  const rememberKey = $("rememberKey");
+  const autoVerify = $("autoVerify");
+  const verifyBtn = $("verifyBtn");
+  const unbindBtn = $("unbindBtn");
+  const status = $("status");
+  const statusTitle = $("statusTitle");
+  const statusMessage = $("statusMessage");
+  const result = $("result");
+  const resultStatus = $("resultStatus");
+  const resultExpire = $("resultExpire");
+  const resultMaxDevices = $("resultMaxDevices");
+  const resultBoundDevices = $("resultBoundDevices");
+  const serverUrl = $("serverUrl");
+
+  serverUrl.textContent = "";
+
+  function generateDeviceId() {
+    const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let randomPart = "";
+    try {
+      if (window.crypto && window.crypto.getRandomValues) {
+        const bytes = new Uint8Array(4);
+        window.crypto.getRandomValues(bytes);
+        for (let i = 0; i < 4; i++) randomPart += chars[bytes[i] % chars.length];
+      } else throw new Error("crypto unavailable");
+    } catch (e) {
+      for (let i = 0; i < 4; i++) randomPart += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return "HIK-" + randomPart;
+  }
+
+  function getDeviceId() {
+    let id = localStorage.getItem(STORAGE.DEVICE_ID);
+    if (!id || !String(id).trim()) {
+      id = generateDeviceId();
+      localStorage.setItem(STORAGE.DEVICE_ID, id);
+    }
+    return String(id).trim();
+  }
+
+  function updateDeviceDisplay() { deviceIdElement.textContent = getDeviceId(); }
+  function normalizeKey(value) { return String(value || "").trim().toUpperCase().replace(/\s+/g, ""); }
+  function isReasonableKey(key) { return !!key && key.length <= 500; }
+
+  function formatExpireTime(value) {
+    if (!value) return "-";
+    try {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    } catch (e) { return String(value); }
+  }
+
+  function showStatus(type, title, message) {
+    status.className = "status show " + type;
+    statusTitle.textContent = title;
+    statusMessage.textContent = message;
+  }
+  function hideStatus() { status.className = "status"; }
+
+  function showResult(data) {
+    result.classList.add("show");
+    resultStatus.textContent = data.ok === true ? "验证成功" : "验证失败";
+    resultExpire.textContent = formatExpireTime(data.expires_at);
+    resultMaxDevices.textContent = data.max_devices != null ? String(data.max_devices) : "-";
+    let boundCount = null;
+    if (Array.isArray(data.bound_devices)) boundCount = data.bound_devices.length;
+    else if (data.bound_devices_count != null && !Number.isNaN(Number(data.bound_devices_count))) boundCount = Number(data.bound_devices_count);
+    else if (data.bound_count != null && !Number.isNaN(Number(data.bound_count))) boundCount = Number(data.bound_count);
+    else if (data.devices_count != null && !Number.isNaN(Number(data.devices_count))) boundCount = Number(data.devices_count);
+    else if (data.bound_devices != null && !Number.isNaN(Number(data.bound_devices))) boundCount = Number(data.bound_devices);
+    resultBoundDevices.textContent = boundCount != null ? boundCount + " " : "-";
+  }
+  function hideResult() { result.classList.remove("show"); }
+
+  function getHttpErrorMessage(response, data) {
+    const backendMessage = data && typeof data.error === "string" ? data.error : "";
+    switch (response.status) {
+      case 400: return backendMessage || "请求参数错误，请检查卡密和设备信息。";
+      case 403: return backendMessage || "卡密验证失败，可能无效、过期或设备绑定受限。";
+      case 429: return backendMessage || "请求过于频繁，请稍后再试。";
+      case 404: return "验证接口不存在，请检查服务器 API 地址。";
+      case 500: case 502: case 503: case 504: return backendMessage || "验证服务器暂时不可用，请稍后再试。";
+      default: return backendMessage || "服务器返回错误 HTTP " + response.status;
+    }
+  }
+
+  async function buildSignedHeaders(key, deviceId) {
+    const ts = Math.floor(Date.now() / 1000).toString();
+    const sign = await sha256(key + "|" + deviceId + "|" + ts + "|" + CLIENT_SECRET);
+    return { "Content-Type": "application/json", "X-Sign": sign, "X-Ts": ts };
+  }
+
+  async function doVerify() {
+    const key = normalizeKey(cardKeyInput.value);
+    const deviceId = getDeviceId();
+    if (!isReasonableKey(key)) {
+      showStatus("warning", "请输入卡密", "请先输入有效的卡密后再进行验证。");
+      cardKeyInput.focus();
+      return;
+    }
+    verifyBtn.disabled = true;
+    verifyBtn.innerHTML = '<span class="loading"></span>正在验证...';
+    hideResult();
+    showStatus("warning", "正在验证", "正在连接验证服务器，请稍候...");
+    try {
+      const headers = await buildSignedHeaders(key, deviceId);
+      const response = await fetch(VERIFY_API, {
+        method: "POST", headers: headers,
+        body: JSON.stringify({ key: key, device_id: deviceId }),
+        cache: "no-store"
+      });
+      let data = null;
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.toLowerCase().includes("application/json")) {
+        try { data = await response.json(); } catch (e) { data = null; }
+      } else {
+        try { data = JSON.parse(await response.text()); } catch (e) { data = null; }
+      }
+      if (!response.ok) { showStatus("error", "验证失败", getHttpErrorMessage(response, data)); return; }
+      if (!data || data.ok !== true) {
+        showStatus("error", "验证失败", data && data.error ? data.error : "服务器返回的验证结果无效。");
+        return;
+      }
+      showResult(data);
+      showStatus("success", "验证成功", "卡密验证通过，正在跳转...");
+      localStorage.setItem(STORAGE.CARD_KEY_DRAFT, key);
+      if (rememberKey.checked) localStorage.setItem(STORAGE.CARD_KEY, key);
+      else localStorage.removeItem(STORAGE.CARD_KEY);
+      localStorage.setItem(STORAGE.REMEMBER, rememberKey.checked ? "1" : "0");
+      localStorage.setItem(STORAGE.AUTO_VERIFY, autoVerify.checked ? "1" : "0");
+      setTimeout(function () { window.location.href = SUCCESS_PAGE; }, 1200);
+    } catch (error) {
+      console.error("Verify request error:", error);
+      showStatus("error", "无法连接验证服务器",
+        "请求没有正常到达服务器。请检查网络、WebCat 网络权限，以及 Cloudflare Worker 的 CORS 配置。");
+    } finally {
+      verifyBtn.disabled = false;
+      verifyBtn.textContent = "验证卡密";
+    }
+  }
+
+  async function doUnbind() {
+    const key = normalizeKey(cardKeyInput.value);
+    const deviceId = getDeviceId();
+    if (!isReasonableKey(key)) {
+      showStatus("warning", "请输入卡密", "请先输入需要解绑的卡密。");
+      cardKeyInput.focus();
+      return;
+    }
+    if (!window.confirm("确定要解绑当前设备吗？\n\n解绑后，该卡密将不再绑定当前设备；是否能重新绑定取决于服务器规则。")) return;
+    unbindBtn.disabled = true;
+    verifyBtn.disabled = true;
+    unbindBtn.innerHTML = '<span class="loading"></span>正在解绑...';
+    hideResult();
+    showStatus("warning", "正在解绑", "正在连接服务器处理设备解绑，请稍候...");
+    try {
+      const headers = await buildSignedHeaders(key, deviceId);
+      const response = await fetch(UNBIND_API, {
+        method: "POST", headers: headers,
+        body: JSON.stringify({ key: key, device_id: deviceId }),
+        cache: "no-store"
+      });
+      let data = null;
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.toLowerCase().includes("application/json")) {
+        try { data = await response.json(); } catch (e) { data = null; }
+      } else {
+        try { data = JSON.parse(await response.text()); } catch (e) { data = null; }
+      }
+      if (!response.ok) {
+        let message = "";
+        if (data && typeof data.error === "string") message = data.error;
+        if (response.status === 404) message = message || "服务器未部署 /api/unbind 解绑接口。";
+        else if (response.status === 400) message = message || "解绑请求参数错误。";
+        else if (response.status === 403) message = message || "服务器拒绝解绑。";
+        else if (response.status === 429) message = message || "操作过于频繁，请稍后再试。";
+        else message = message || "解绑失败，服务器返回 HTTP " + response.status;
+        showStatus("error", "解绑失败", message);
+        return;
+      }
+      if (!data || data.ok !== true) {
+        showStatus("error", "解绑失败", data && data.error ? data.error : "服务器返回的解绑结果无效。");
+        return;
+      }
+      showStatus("success", "解绑成功", data.message || "当前设备已成功从该卡密中解绑。");
+      hideResult();
+    } catch (error) {
+      console.error("Unbind request error:", error);
+      showStatus("error", "无法连接验证服务器",
+        "解绑请求没有正常到达服务器。请检查网络、CORS，以及 Cloudflare Worker 是否已更新。");
+    } finally {
+      unbindBtn.disabled = false;
+      verifyBtn.disabled = false;
+      unbindBtn.textContent = "解绑当前设备";
+    }
+  }
+
+  function resetDevice() {
+    if (!window.confirm("确定要重新生成设备 ID 吗？\n\n如果服务器已经绑定当前旧设备，重新生成后服务器仍可能认为旧设备已经占用名额。")) return;
+    localStorage.removeItem(STORAGE.DEVICE_ID);
+    updateDeviceDisplay();
+    showStatus("warning", "设备 ID 已重置", "新的设备 ID 已生成。");
+  }
+
+  function formatCardKey(value) {
+    let clean = String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (clean.length === 16) {
+      return clean.substring(0,4) + "-" + clean.substring(4,8) + "-" + clean.substring(8,12) + "-" + clean.substring(12,16);
+    }
+    return value.toUpperCase();
+  }
+
+  verifyBtn.addEventListener("click", doVerify);
+  unbindBtn.addEventListener("click", doUnbind);
+  cardKeyInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") { event.preventDefault(); doVerify(); }
+  });
+  cardKeyInput.addEventListener("input", function () {
+    const clean = cardKeyInput.value.replace(/[^a-zA-Z0-9]/g, "");
+    if (clean.length === 16) cardKeyInput.value = formatCardKey(clean);
+    const draft = normalizeKey(cardKeyInput.value);
+    if (draft) localStorage.setItem(STORAGE.CARD_KEY_DRAFT, draft);
+    else localStorage.removeItem(STORAGE.CARD_KEY_DRAFT);
+  });
+  resetDeviceBtn.addEventListener("click", resetDevice);
+  rememberKey.addEventListener("change", function () {
+    localStorage.setItem(STORAGE.REMEMBER, rememberKey.checked ? "1" : "0");
+    if (!rememberKey.checked) localStorage.removeItem(STORAGE.CARD_KEY);
+    else {
+      const key = normalizeKey(cardKeyInput.value);
+      if (key) {
+        localStorage.setItem(STORAGE.CARD_KEY, key);
+        localStorage.setItem(STORAGE.CARD_KEY_DRAFT, key);
+      }
+    }
+  });
+  autoVerify.addEventListener("change", function () {
+    localStorage.setItem(STORAGE.AUTO_VERIFY, autoVerify.checked ? "1" : "0");
+  });
+
+  function init() {
+    updateDeviceDisplay();
+    const remember = localStorage.getItem(STORAGE.REMEMBER) === "1";
+    rememberKey.checked = remember;
+    if (remember) {
+      const savedKey = localStorage.getItem(STORAGE.CARD_KEY);
+      if (savedKey) cardKeyInput.value = formatCardKey(savedKey);
+    }
+    if (!cardKeyInput.value.trim()) {
+      const draftKey = localStorage.getItem(STORAGE.CARD_KEY_DRAFT);
+      if (draftKey) cardKeyInput.value = formatCardKey(draftKey);
+    }
+    const auto = localStorage.getItem(STORAGE.AUTO_VERIFY) === "1";
+    autoVerify.checked = auto;
+    if (auto && cardKeyInput.value.trim()) setTimeout(doVerify, 800);
+  }
+
+  window.addEventListener("pagehide", function () {
+    const key = normalizeKey(cardKeyInput.value);
+    if (key) localStorage.setItem(STORAGE.CARD_KEY_DRAFT, key);
+  });
+
+  init();
+})();
+
+// ============================================================
+// 反馈 / 客服对话
+// ============================================================
+(function(){
+  "use strict";
+  var MAIN_API = "https://xiaoke.xiaokettkx.workers.dev";
+
+  var fbBtn = document.getElementById("fbBtn");
+  var fbNewDot = document.getElementById("fbNewDot");
+  var fbModal = document.getElementById("fbModal");
+  var fbMainView = document.getElementById("fbMainView");
+  var fbChatView = document.getElementById("fbChatView");
+  var fbContent = document.getElementById("fbContent");
+  var fbContact = document.getElementById("fbContact");
+  var fbCancel = document.getElementById("fbCancel");
+  var fbSubmit = document.getElementById("fbSubmit");
+  var fbMsg = document.getElementById("fbMsg");
+  var fbThreadListBody = document.getElementById("fbThreadListBody");
+  var fbBackBtn = document.getElementById("fbBackBtn");
+  var fbChatHeadText = document.getElementById("fbChatHeadText");
+  var fbChatMsgs = document.getElementById("fbChatMsgs");
+  var fbReplyInput = document.getElementById("fbReplyInput");
+  var fbReplySubmit = document.getElementById("fbReplySubmit");
+  var fbMsg2 = document.getElementById("fbMsg2");
+
+  var currentThreadId = null;
+  var unreadThreadIds = {};
+
+  function getDeviceId() {
+    try { return localStorage.getItem("card_verify_device_id") || ""; } catch (_) { return ""; }
+  }
+  function esc(v) {
+    return String(v || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+  }
+
+  function showToast(msg, err) {
+    if (err) fbMsg.style.color = "#f85149"; else fbMsg.style.color = "#3fb950";
+    fbMsg.textContent = msg;
+    setTimeout(function(){ fbMsg.textContent = ""; }, 2500);
+  }
+
+  function refreshNewDot() {
+    var hasUnread = false;
+    for (var k in unreadThreadIds) {
+      if (unreadThreadIds[k]) { hasUnread = true; break; }
+    }
+    if (hasUnread) fbNewDot.classList.add("show");
+    else fbNewDot.classList.remove("show");
+  }
+
+  async function loadThreadList() {
+    var did = getDeviceId();
+    if (!did) { fbThreadListBody.innerHTML = '<div class="empty">暂无反馈</div>'; return; }
+    try {
+      var res = await fetch(MAIN_API + "/api/feedback/mine?device_id=" + encodeURIComponent(did), { cache: "no-store" });
+      var data = await res.json().catch(function(){ return {}; });
+      if (!res.ok || !data.ok) throw new Error((data && data.error) || ("HTTP " + res.status));
+      var list = data.list || [];
+
+      unreadThreadIds = {};
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].unread_user > 0) unreadThreadIds[list[i].id] = true;
+      }
+      refreshNewDot();
+
+      if (!list.length) {
+        fbThreadListBody.innerHTML = '<div class="empty">暂无反馈</div>';
+        return;
+      }
+      var html = "";
+      for (var j = 0; j < list.length; j++) {
+        var t = list[j];
+        var preview = t.last_role === "admin" ? "【管理员】" : "【我】";
+        preview += " " + (t.last_content || "").slice(0, 60);
+        var badge = t.unread_user > 0 ? '<span class="fb-thread-badge">新</span>' : '';
+        var closedTag = t.status === "closed" ? '<span class="fb-thread-closed">（已关闭）</span>' : '';
+        html += '<div class="fb-thread-item" data-id="' + t.id + '">' +
+          '<div class="fb-thread-head">' +
+            '<span>' + new Date(t.last_at).toLocaleString("zh-CN", { hour12: false }) + badge + '</span>' +
+            '<span>' + closedTag + '</span>' +
+          '</div>' +
+          '<div class="fb-thread-preview">' + esc(preview) + '</div>' +
+        '</div>';
+      }
+      fbThreadListBody.innerHTML = html;
+    } catch (e) {
+      var msg = e && e.message ? e.message : "网络连接失败";
+      fbThreadListBody.innerHTML = '<div class="empty">加载失败<br><span style="font-size:11px;color:#8b949e;">' + esc(msg) + '</span><br><button type="button" id="fbRetryLoad" style="margin-top:8px;padding:6px 12px;border:0;border-radius:6px;background:#0e7490;color:#fff;cursor:pointer;">重新加载</button></div>';
+      var retry = document.getElementById("fbRetryLoad");
+      if (retry) retry.addEventListener("click", loadThreadList);
+    }
+  }
+
+  fbThreadListBody.addEventListener("click", function(e){
+    var item = e.target.closest(".fb-thread-item");
+    if (!item) return;
+    openThread(Number(item.dataset.id));
+  });
+
+  async function openThread(id) {
+    currentThreadId = id;
+    fbMainView.style.display = "none";
+    fbChatView.style.display = "flex";
+    fbChatHeadText.textContent = "加载中...";
+    fbChatMsgs.innerHTML = "";
+    fbMsg2.textContent = "";
+
+    // 打开会话时，本地立即清掉这个会话的红点
+    if (unreadThreadIds[id]) {
+      delete unreadThreadIds[id];
+      refreshNewDot();
+    }
+// 通知后端：这个会话已读
+try {
+  await fetch(MAIN_API + "/api/feedback/read", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ thread_id: id, device_id: getDeviceId() }),
+    cache: "no-store"
+  });
+} catch (_) {}
+    try {
+      var did = getDeviceId();
+      var res = await fetch(MAIN_API + "/api/feedback/messages/" + id + "?device_id=" + encodeURIComponent(did), { cache: "no-store" });
+      var data = await res.json().catch(function(){ return {}; });
+      if (!res.ok || !data.ok) throw new Error(data.error || ("HTTP " + res.status));
+      var msgs = data.messages || [];
+      var status = data.status || "open";
+      fbChatHeadText.innerHTML = "会话 #" + id + " " + (status === "closed" ? '<span style="color:#6e7681;">（已关闭）</span>' : '');
+
+      var html = "";
+      for (var i = 0; i < msgs.length; i++) {
+        var m = msgs[i];
+        var role = m.from_role === "admin" ? "admin" : "user";
+        var roleLabel = role === "admin" ? "管理员" : "我";
+        html += '<div class="msg-row ' + role + '">' +
+          '<div class="msg-bubble">' + esc(m.content) + '</div>' +
+          '<div class="msg-time">' + roleLabel + ' · ' + new Date(m.at).toLocaleString("zh-CN", { hour12: false }) + '</div>' +
+        '</div>';
+      }
+      fbChatMsgs.innerHTML = html || '<div class="empty">暂无消息</div>';
+      setTimeout(function(){ fbChatMsgs.scrollTop = fbChatMsgs.scrollHeight; }, 30);
+
+      if (status === "closed") {
+        fbReplyInput.disabled = true;
+        fbReplySubmit.disabled = true;
+        fbReplyInput.placeholder = "会话已关闭，无法继续追问";
+      } else {
+        fbReplyInput.disabled = false;
+        fbReplySubmit.disabled = false;
+        fbReplyInput.placeholder = "继续追问...";
+      }
+    } catch (e) {
+      fbChatHeadText.textContent = "加载失败";
+      fbChatMsgs.innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    }
+  }
+
+  fbBackBtn.addEventListener("click", function(){
+    currentThreadId = null;
+    fbChatView.style.display = "none";
+    fbMainView.style.display = "block";
+    loadThreadList();
+  });
+
+  fbReplySubmit.addEventListener("click", async function(){
+    if (!currentThreadId) return;
+    var content = String(fbReplyInput.value || "").trim();
+    if (!content) { fbMsg2.style.color = "#f85149"; fbMsg2.textContent = "内容不能为空"; return; }
+    fbReplySubmit.disabled = true; fbReplySubmit.textContent = "发送中...";
+    try {
+      var did = getDeviceId();
+      var res = await fetch(MAIN_API + "/api/feedback/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ thread_id: currentThreadId, content: content, device_id: did }),
+        cache: "no-store"
+      });
+      var data = await res.json().catch(function(){ return {}; });
+      if (!res.ok || !data.ok) throw new Error(data.error || ("HTTP " + res.status));
+      fbReplyInput.value = "";
+      fbMsg2.style.color = "#3fb950";
+      fbMsg2.textContent = "已发送";
+      await openThread(currentThreadId);
+      loadThreadList();
+    } catch (e) {
+      fbMsg2.style.color = "#f85149";
+      fbMsg2.textContent = "发送失败：" + e.message;
+    } finally {
+      fbReplySubmit.disabled = false; fbReplySubmit.textContent = "发送";
+    }
+  });
+
+  // 打开弹窗
+  fbBtn.addEventListener("click", function(){
+    fbModal.style.display = "flex";
+    fbMsg.textContent = "";
+    fbContent.value = "";
+    fbContact.value = "";
+    fbMainView.style.display = "block";
+    fbChatView.style.display = "none";
+    currentThreadId = null;
+    loadThreadList();
+    setTimeout(function(){ fbContent.focus(); }, 100);
+  });
+
+  fbCancel.addEventListener("click", function(){ fbModal.style.display = "none"; });
+  fbModal.addEventListener("click", function(e){ if (e.target === fbModal) fbModal.style.display = "none"; });
+
+  fbSubmit.addEventListener("click", async function(){
+    var content = String(fbContent.value || "").trim();
+    var contact = String(fbContact.value || "").trim();
+    if (!content) { showToast("请填写反馈内容", true); return; }
+    fbSubmit.disabled = true; fbSubmit.textContent = "提交中...";
+    fbMsg.style.color = "#8b949e"; fbMsg.textContent = "";
+    try {
+      var did = getDeviceId();
+      var res = await fetch(MAIN_API + "/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: content, contact: contact, device_id: did, page: location.pathname }),
+        cache: "no-store"
+      });
+      var data = await res.json().catch(function(){ return {}; });
+      if (!res.ok || !data.ok) throw new Error(data.error || ("HTTP " + res.status));
+      showToast("提交成功，感谢您的反馈！", false);
+      fbContent.value = "";
+      fbContact.value = "";
+      loadThreadList();
+    } catch (e) {
+      showToast("提交失败：" + e.message, true);
+    } finally {
+      fbSubmit.disabled = false; fbSubmit.textContent = "提交";
+    }
+  });
+
+  // 自动检查未读：每 10 秒一次，管理员一回复就能看到红点
+  async function checkUnread() {
+    var did = getDeviceId();
+    if (!did) return;
+    try {
+      var res = await fetch(MAIN_API + "/api/feedback/mine?device_id=" + encodeURIComponent(did), { cache: "no-store" });
+      var data = await res.json().catch(function(){ return {}; });
+      var list = (data && data.list) || [];
+      unreadThreadIds = {};
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].unread_user > 0) unreadThreadIds[list[i].id] = true;
+      }
+      refreshNewDot();
+    } catch (_) {}
+  }
+
+  setTimeout(checkUnread, 800);
+  setInterval(checkUnread, 10000);
+})();
+</script>
+</body>
+</html>
