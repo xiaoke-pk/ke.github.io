@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>迅雷云盘 · 资源中心</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      background: #080b12; color: #f4f7ff;
+      overflow: hidden;
+    }
+
+    .scroll-wrap {
+      width: 100%; height: 100%;
+      overflow-y: auto; overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      display: flex; justify-content: center; align-items: flex-start;
+      padding: 24px 18px; position: relative; z-index: 1;
+    }
+
+    .bg-glow { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .bg-glow::before, .bg-glow::after {
+      content: ''; position: absolute;
+      width: 60%; height: 60%; border-radius: 50%;
+    }
+    .bg-glow::before {
+      top: -20%; left: -10%;
+      background: radial-gradient(circle, rgba(31,111,235,.22) 0%, transparent 70%);
+    }
+    .bg-glow::after {
+      bottom: -20%; right: -10%;
+      background: radial-gradient(circle, rgba(10,75,176,.20) 0%, transparent 70%);
+    }
+
+    .container { width: 100%; max-width: 520px; margin: auto 0; }
+
+    .card {
+      background: rgba(18, 23, 34, 0.96);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 28px;
+      padding: 32px 22px 26px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
+      text-align: center;
+      animation: cardIn .7s cubic-bezier(.2,.9,.3,1);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(28px) scale(.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .pan-logo {
+      width: 76px; height: 76px; margin: 0 auto 16px;
+      border-radius: 22px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; color: #fff;
+      background: linear-gradient(135deg, #1f6feb, #0a4bb0);
+      box-shadow: 0 15px 35px -10px rgba(31,111,235,.65);
+      animation: pulseLogo 2.4s infinite;
+    }
+    @keyframes pulseLogo {
+      0%   { box-shadow: 0 15px 35px -10px rgba(31,111,235,.65), 0 0 0 0 rgba(31,111,235,.45); }
+      70%  { box-shadow: 0 15px 35px -10px rgba(31,111,235,.65), 0 0 0 18px rgba(31,111,235,0); }
+      100% { box-shadow: 0 15px 35px -10px rgba(31,111,235,.65), 0 0 0 0 rgba(31,111,235,0); }
+    }
+
+    .title {
+      margin: 0 0 6px; font-size: 24px; font-weight: 800; letter-spacing: .5px;
+      background: linear-gradient(135deg, #a3c8ff, #6ea8ff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle { color: #8e99ad; font-size: 13px; line-height: 1.6; margin-bottom: 24px; }
+
+    .section-title {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      color: #8e99ad; font-size: 12px; font-weight: 600;
+      letter-spacing: 1px; margin-bottom: 18px;
+      text-transform: uppercase;
+    }
+    .section-title::before, .section-title::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,.12), transparent);
+    }
+
+    .res-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-bottom: 8px;
+    }
+
+    .res-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 14px; border-radius: 16px;
+      font-size: 14px; font-weight: 600; color: #fff;
+      text-decoration: none; cursor: pointer;
+      transition: transform .2s, box-shadow .2s, filter .2s;
+      border: 1px solid rgba(255,255,255,.06);
+      background: linear-gradient(135deg, #1e3a8a, #1e40af);
+      box-shadow: 0 10px 22px -10px rgba(30,64,175,.6);
+      -webkit-user-select: none; user-select: none;
+      text-align: left; position: relative; overflow: hidden;
+    }
+    .res-btn:active { transform: scale(.97); }
+    .res-btn:hover { filter: brightness(1.1); box-shadow: 0 14px 28px -10px rgba(30,64,175,.85); }
+
+    .res-btn .res-index {
+      width: 38px; height: 38px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800;
+      background: rgba(255,255,255,.16);
+      flex-shrink: 0; color: #fff;
+    }
+
+    .res-btn .res-text {
+      flex: 1; display: flex; flex-direction: column;
+      gap: 2px; line-height: 1.25;
+    }
+    .res-btn .res-text strong { font-size: 14px; font-weight: 700; }
+
+    .res-btn.res-full { grid-column: 1 / -1; }
+
+    .res-btn.c1  { background: linear-gradient(135deg, #1f6feb, #0a4bb0); }
+    .res-btn.c2  { background: linear-gradient(135deg, #2563eb, #1e40af); }
+    .res-btn.c3  { background: linear-gradient(135deg, #1e40af, #172554); }
+    .res-btn.c4  { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
+    .res-btn.c5  { background: linear-gradient(135deg, #0284c7, #075985); }
+    .res-btn.c6  { background: linear-gradient(135deg, #4f46e5, #3730a3); }
+    .res-btn.c7  { background: linear-gradient(135deg, #0f766e, #115e59); }
+    .res-btn.c8  { background: linear-gradient(135deg, #1d4ed8, #1e3a8a); }
+    .res-btn.c9  { background: linear-gradient(135deg, #0891b2, #155e75); }
+    .res-btn.c10 { background: linear-gradient(135deg, #4338ca, #312e81); }
+    .res-btn.c11 { background: linear-gradient(135deg, #0369a1, #0c4a6e); }
+    .res-btn.c12 { background: linear-gradient(135deg, #1e3a8a, #0f172a); }
+
+    .back-btn {
+      margin-top: 26px; background: transparent;
+      border: 1px solid rgba(255,255,255,.12);
+      color: #8e99ad; padding: 12px 20px; border-radius: 14px;
+      font-size: 13px; cursor: pointer; transition: all .2s; width: 100%;
+    }
+    .back-btn:hover { background: rgba(255,255,255,.05); color: #cbd5e1; }
+
+    .footer-note { margin-top: 18px; color: #596477; font-size: 11px; line-height: 1.6; }
+
+    @media (max-width: 420px) {
+      .res-grid { grid-template-columns: 1fr; }
+      .res-btn.res-full { grid-column: auto; }
+      .card { padding: 28px 18px 22px; }
+      .title { font-size: 21px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <div class="scroll-wrap">
+    <div class="container">
+      <div class="card">
+        <div class="pan-logo">🚀</div>
+        <h1 class="title">迅雷云盘资源</h1>
+        <p class="subtitle">请选择下方资源获取对应内容</p>
+
+        <div class="section-title">📦 资源列表</div>
+
+        <div class="res-grid">
+          <a href="链接1" target="_blank" rel="noopener" class="res-btn c1">
+            <span class="res-index">1</span>
+            <span class="res-text"><strong>资源 1</strong></span>
+          </a>
+          <a href="链接2" target="_blank" rel="noopener" class="res-btn c2">
+            <span class="res-index">2</span>
+            <span class="res-text"><strong>资源 2</strong></span>
+          </a>
+          <a href="链接3" target="_blank" rel="noopener" class="res-btn c3">
+            <span class="res-index">3</span>
+            <span class="res-text"><strong>资源 3</strong></span>
+          </a>
+          <a href="链接4" target="_blank" rel="noopener" class="res-btn c4">
+            <span class="res-index">4</span>
+            <span class="res-text"><strong>资源 4</strong></span>
+          </a>
+          <a href="链接5" target="_blank" rel="noopener" class="res-btn c5">
+            <span class="res-index">5</span>
+            <span class="res-text"><strong>资源 5</strong></span>
+          </a>
+       </div>
+        <button class="back-btn" onclick="window.location.href='cg.html'" type="button">
+          ← 返回导航中心
+        </button>
+
+        <div class="footer-note">
+          点击上方按钮跳转至对应资源<br>
+          本页面仅作导航使用
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

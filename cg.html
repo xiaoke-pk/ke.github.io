@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>验证成功 · 网盘资源中心</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      background: #080b12; color: #f4f7ff;
+      overflow: hidden;
+    }
+
+    /* 滚动容器 */
+    .scroll-wrap {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 背景光晕 */
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .bg-glow::before,
+    .bg-glow::after {
+      content: '';
+      position: absolute;
+      width: 60%; height: 60%;
+      border-radius: 50%;
+    }
+    .bg-glow::before {
+      top: -20%; left: -10%;
+      background: radial-gradient(circle, rgba(88,101,242,.18) 0%, transparent 70%);
+    }
+    .bg-glow::after {
+      bottom: -20%; right: -10%;
+      background: radial-gradient(circle, rgba(124,58,237,.18) 0%, transparent 70%);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 460px;
+      margin: auto 0;
+    }
+
+    .card {
+      background: rgba(18, 23, 34, 0.96);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 28px;
+      padding: 36px 24px 30px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
+      text-align: center;
+      animation: cardIn .7s cubic-bezier(.2,.9,.3,1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(28px) scale(.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .success-icon {
+      width: 80px; height: 80px; margin: 0 auto 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 38px; color: #fff;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      box-shadow: 0 10px 30px rgba(34,197,94,.35);
+      animation: pulseIcon 2s infinite;
+    }
+    @keyframes pulseIcon {
+      0% { box-shadow: 0 0 0 0 rgba(34,197,94,.5); }
+      70% { box-shadow: 0 0 0 18px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+
+    .title {
+      margin: 0 0 8px; font-size: 26px; font-weight: 800; letter-spacing: .5px;
+      background: linear-gradient(135deg, #a5b4fc, #c4b5fd);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: #8e99ad; font-size: 14px; line-height: 1.6; margin-bottom: 28px;
+    }
+
+    .verified-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(34,197,94,.1);
+      border: 1px solid rgba(34,197,94,.3);
+      color: #4ade80; padding: 6px 14px; border-radius: 40px;
+      font-size: 12px; font-weight: 600; margin-bottom: 18px;
+    }
+
+    .pan-group-title {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      color: #8e99ad; font-size: 12px; font-weight: 600;
+      letter-spacing: 1px; margin-bottom: 18px;
+      text-transform: uppercase;
+    }
+    .pan-group-title::before,
+    .pan-group-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,.12), transparent);
+    }
+
+    .pan-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .pan-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 14px; border-radius: 16px;
+      font-size: 14px; font-weight: 600; color: #fff;
+      text-decoration: none; cursor: pointer;
+      transition: transform .2s, box-shadow .2s, filter .2s;
+      border: 1px solid rgba(255,255,255,.06);
+      position: relative; overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .pan-btn:active { transform: scale(.97); }
+    .pan-btn .pan-icon {
+      width: 38px; height: 38px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      background: rgba(255,255,255,.18);
+    }
+    .pan-btn .pan-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      line-height: 1.25;
+      text-align: left;
+    }
+    .pan-btn .pan-text small {
+      font-size: 11px; font-weight: 400; opacity: .85;
+    }
+    .pan-btn:hover { filter: brightness(1.08); }
+
+    .pan-btn.pan-123 {
+      background: linear-gradient(135deg, #2b6cff, #1a4fd6);
+      box-shadow: 0 10px 22px -10px rgba(43,108,255,.6);
+    }
+    .pan-btn.pan-123:hover { box-shadow: 0 14px 28px -10px rgba(43,108,255,.8); }
+
+    .pan-btn.pan-uc {
+      background: linear-gradient(135deg, #ff8c00, #ff5e00);
+      box-shadow: 0 10px 22px -10px rgba(255,94,0,.6);
+    }
+    .pan-btn.pan-uc:hover { box-shadow: 0 14px 28px -10px rgba(255,94,0,.8); }
+
+    .pan-btn.pan-quark {
+      background: linear-gradient(135deg, #3a7bff, #1e5bd6);
+      box-shadow: 0 10px 22px -10px rgba(58,123,255,.6);
+    }
+    .pan-btn.pan-quark:hover { box-shadow: 0 14px 28px -10px rgba(58,123,255,.8); }
+
+    .pan-btn.pan-xunlei {
+      background: linear-gradient(135deg, #1f6feb, #0a4bb0);
+      box-shadow: 0 10px 22px -10px rgba(31,111,235,.6);
+    }
+    .pan-btn.pan-xunlei:hover { box-shadow: 0 14px 28px -10px rgba(31,111,235,.8); }
+
+    .pan-btn.pan-139 {
+      background: linear-gradient(135deg, #1e88e5, #1565c0);
+      box-shadow: 0 10px 22px -10px rgba(30,136,229,.6);
+    }
+    .pan-btn.pan-139:hover { box-shadow: 0 14px 28px -10px rgba(30,136,229,.8); }
+
+    .pan-btn.pan-full {
+      grid-column: 1 / -1;
+    }
+
+    .back-btn {
+      margin-top: 26px; background: transparent;
+      border: 1px solid rgba(255,255,255,.12);
+      color: #8e99ad; padding: 12px 20px; border-radius: 14px;
+      font-size: 13px; cursor: pointer; transition: all .2s; width: 100%;
+    }
+    .back-btn:hover { background: rgba(255,255,255,.05); color: #cbd5e1; }
+
+    .footer-note {
+      margin-top: 20px; color: #596477; font-size: 11px; line-height: 1.6;
+    }
+
+    @media (max-width: 420px) {
+      .pan-buttons { grid-template-columns: 1fr; }
+      .pan-btn.pan-full { grid-column: auto; }
+      .card { padding: 30px 20px 26px; }
+      .title { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 背景光晕层（固定不滚动） -->
+  <div class="bg-glow"></div>
+
+  <!-- 滚动容器：页面所有内容都在这里 -->
+  <div class="scroll-wrap">
+    <div class="container">
+      <div class="card">
+        <div class="success-icon">✓</div>
+        <div class="verified-badge">🔒 卡密验证已通过</div>
+        <h1 class="title">资源导航中心</h1>
+        <p class="subtitle">请选择下方网盘前往获取资源</p>
+
+        <div class="pan-group-title">📦 网盘资源</div>
+
+        <div class="pan-buttons">
+          <!-- 123云盘 → 123.html -->
+          <a href="123.html" rel="noopener" class="pan-btn pan-123">
+            <span class="pan-icon">☁️</span>
+            <span class="pan-text">
+              123云盘
+              <small>大文件极速下载</small>
+            </span>
+          </a>
+
+          <!-- UC浏览器 → uc.html -->
+          <a href="uc.html" rel="noopener" class="pan-btn pan-uc">
+            <span class="pan-icon">🌐</span>
+            <span class="pan-text">
+              UC浏览器
+              <small>网页资源直达</small>
+            </span>
+          </a>
+
+          <!-- 夸克 → quark.html -->
+          <a href="quark.html" rel="noopener" class="pan-btn pan-quark">
+            <span class="pan-icon">⚡</span>
+            <span class="pan-text">
+              夸克网盘
+              <small>智能极速云盘</small>
+            </span>
+          </a>
+
+          <!-- 迅雷 → xunlei.html -->
+          <a href="xunlei.html" rel="noopener" class="pan-btn pan-xunlei">
+            <span class="pan-icon">🚀</span>
+            <span class="pan-text">
+              迅雷云盘
+              <small>下载加速引擎</small>
+            </span>
+          </a>
+
+          <!-- 139云盘 → pan139.html -->
+          <a href="pan139.html" rel="noopener" class="pan-btn pan-139 pan-full">
+            <span class="pan-icon">📱</span>
+            <span class="pan-text">
+              139云盘
+              <small>中国移动云盘 · 安全存储</small>
+            </span>
+          </a>
+        </div>
+
+        <button class="back-btn" onclick="window.location.href='index.html'" type="button">
+          ← 返回验证页面
+        </button>
+
+        <div class="footer-note">
+          点击上方网盘按钮跳转至对应资源<br>
+          本页面仅作导航使用
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
